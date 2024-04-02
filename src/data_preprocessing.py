@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
+import joblib
 
 class DataProcessor:
     def __init__(self, data_path):
@@ -77,6 +78,10 @@ class DataProcessor:
         self.data.to_csv(path, index=False)
         print(f"Data saved successfully to {path}")
 
+    def save_scaler(self, path):
+        joblib.dump(self.scaler, path)
+        print(f"Scaler saved successfully to {path}")
+
 if __name__ == '__main__':
     data_path = 'data/raw/data.csv'
     processor = DataProcessor(data_path)
@@ -88,3 +93,5 @@ if __name__ == '__main__':
     feature_names = processor.get_feature_names()
     save_path = 'data/processed/data.csv'
     processor.save_data(save_path)
+    scaler_path = 'models/scaler.pkl'
+    processor.save_scaler(scaler_path)

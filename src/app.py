@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import joblib
 from data_preprocessing import DataProcessor
-from model_interpret import plot_feature_importances, plot_shap_summary, interpret_prediction
+from model_interpret import plot_feature_importances, interpret_prediction
 
 def load_data(data_path):
     processor = DataProcessor(data_path)
@@ -89,14 +89,10 @@ def main():
             st.success("The prediction is Benign (B)")
 
         # Feature importances plot
-        fig_importances = plot_feature_importances(model, scaled_input_data, feature_names)
+        fig_importances = plot_feature_importances(model, feature_names)
         st.subheader("Feature Importances")
         st.pyplot(fig_importances)
 
-        # SHAP summary plot
-        fig_shap = plot_shap_summary(model, scaled_input_data, feature_names)
-        st.subheader("SHAP Summary Plot")
-        st.pyplot(fig_shap)
 
         # Interpretation for doctors
         st.subheader("Interpretation for Doctors")

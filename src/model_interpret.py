@@ -4,22 +4,24 @@ import matplotlib.pyplot as plt
 import shap
 import streamlit as st
 
-def plot_feature_importances(model, input_data, feature_names):
-    explainer = shap.LinearExplainer(model, input_data)
-    shap_values = explainer.shap_values(input_data)
-    shap_values = np.abs(shap_values).mean(axis=0)
+def plot_feature_importances(model, feature_names):
+    if hasattr(model, 'coef_'):
+        coefficients = model.coef_[0]
+        indices = np.argsort(np.abs(coefficients))[::-1]
 
-    fig, ax = plt.subplots(figsize=(10, 8))
-    ax.set_title("SHAP Feature Importances")
-    ax.bar(range(len(feature_names)), shap_values, align="center")
-    ax.set_xticks(range(len(feature_names)))
-    ax.set_xticklabels(feature_names, rotation=90)
-    ax.set_xlim([-1, len(feature_names)])
-    fig.tight_layout()
-    return fig
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.set_title("Feature Importances")
+        ax.bar(range(len(feature_names)), coefficients[indices], align="center")
+        ax.set_xticks(range(len(feature_names)))
+        ax.set_xticklabels(np.array(feature_names)[indices], rotation=90)
+        ax.set_xlim([-1, len(feature_names)])
+        fig.tight_layout()
+        return fig
+    else:
+        raise ValueError("Model does not have coefficients for feature importances.")
 
 def plot_shap_summary(model, input_data, feature_names):
-    explainer = shap.LinearExplainer(model, input_data)
+    explainer = shap.Explainer(model, input_data)
     shap_values = explainer.shap_values(input_data)
 
     fig, ax = plt.subplots(figsize=(10, 8))
