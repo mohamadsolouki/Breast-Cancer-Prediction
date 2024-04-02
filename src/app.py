@@ -3,7 +3,8 @@ import pandas as pd
 import numpy as np
 import joblib
 from data_preprocessing import DataProcessor
-from model_interpret import plot_feature_importances, interpret_prediction
+from model_interpret import interpret_model_coefficients, interpret_prediction_with_shap
+
 
 def load_data(data_path):
     processor = DataProcessor(data_path)
@@ -83,20 +84,16 @@ def main():
         input_data = pd.DataFrame([form_data])
         scaled_input_data = scaler.transform(input_data)
         prediction = predict(model, scaled_input_data)
-        if prediction[0] == 1:
-            st.error("The prediction is Malignant (M)")
-        else:
-            st.success("The prediction is Benign (B)")
-
-        # Feature importances plot
-        fig_importances = plot_feature_importances(model, feature_names)
-        st.subheader("Feature Importances")
-        st.pyplot(fig_importances)
-
+        prediction_text = "Malignant" if prediction[0] == 1 else "Benign"
+        st.subheader("Prediction")
+        st.write(f"The tumor is **{prediction_text}**.")
 
         # Interpretation for doctors
-        st.subheader("Interpretation for Doctors")
-        interpret_prediction(model, scaled_input_data, feature_names, prediction)
+        interpret_prediction_with_shap(model, scaled_input_data[0], data)
+
+        # Model coefficients interpretation
+        interpret_model_coefficients(model, feature_names)
+
 
 if __name__ == '__main__':
     main()

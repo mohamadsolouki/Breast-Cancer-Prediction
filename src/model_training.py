@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -8,7 +6,6 @@ from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.model_selection import cross_val_score
-from sklearn.metrics import plot_confusion_matrix, plot_roc_curve
 import joblib
 from data_preprocessing import DataProcessor
 from tabulate import tabulate
@@ -97,14 +94,6 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test):
 
     print(f"\nBest Model: {best_model_name}")
     print(f"Best Cross-validation Score: {best_score:.4f}")
-
-    # Plot and save the confusion matrix for the best model
-    plot_confusion_matrix(best_model, X_test, y_test)
-    plt.savefig('models/confusion_matrix.png')
-
-    # Plot and save the ROC curve for the best model
-    plot_roc_curve(best_model, X_test, y_test)
-    plt.savefig('models/roc_curve.png')
 
     return best_model
 
