@@ -6,10 +6,10 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc, confusion_matrix
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, cross_val_score
+from sklearn.preprocessing import StandardScaler
 import joblib
 from data_preprocessing import DataProcessor
-
 
 def evaluate_model(model, X_test, y_test):
     y_pred = model.predict(X_test)
@@ -45,6 +45,10 @@ def plot_roc_curve(y_test, y_pred, model_name):
     plt.close()
 
 def train_and_evaluate_models(X_train, y_train, X_test, y_test):
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
     models = {
         'Logistic Regression': {
             'model': LogisticRegression(max_iter=10000),
@@ -70,10 +74,13 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test):
     for name, data in models.items():
         print(f"\nTraining {name}...")
         grid_search = GridSearchCV(data['model'], data['params'], cv=5, scoring='f1')
-        grid_search.fit(X_train, y_train)
+        grid_search.fit(X_train_scaled, y_train)
 
         model = grid_search.best_estimator_
-        accuracy, precision, recall, f1, y_pred = evaluate_model(model, X_test, y_test)
+        scores = cross_val_score(model, X_train_scaled, y_train, cv=5, scoring='f1')
+        mean_score = scores.mean()
+
+        accuracy, precision, recall, f1, y_pred = evaluate_model(model, X_test_scaled, y_test)
         plot_confusion_matrix(y_test, y_pred, name)
         plot_roc_curve(y_test, y_pred, name)
 
@@ -83,6 +90,7 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test):
         results.append({
             'Model': name,
             'Best Params': grid_search.best_params_,
+            'Cross-Val Score': mean_score,
             'Accuracy': accuracy,
             'Precision': precision,
             'Recall': recall,
@@ -92,8 +100,8 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test):
     results_df = pd.DataFrame(results)
     print("\nModel Performance Summary:")
     print(results_df.to_string(index=False))
-    
-    return best_model
+
+    return best_model, scaler
 
 if __name__ == '__main__':
     data_path = 'data/raw/data.csv'
@@ -105,7 +113,9 @@ if __name__ == '__main__':
     X_train, y_train = processor.get_train_data()
     X_test, y_test = processor.get_test_data()
 
-    best_model = train_and_evaluate_models(X_train, y_train, X_test, y_test)
+    best_model, scaler = train_and_evaluate_models(X_train, y_train, X_test, y_test)
 
     joblib.dump(best_model, 'src/models/best_model.pkl')
+    joblib.dump(scaler, 'src/models/scaler.pkl')
     print(f"\nBest model saved as 'src/models/best_model.pkl'")
+    print(f"Scaler saved as 'src/models/scaler.pkl'")

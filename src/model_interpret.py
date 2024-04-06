@@ -2,14 +2,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import shap
-import lime
 from lime import lime_tabular
 from sklearn.inspection import PartialDependenceDisplay
 from data_preprocessing import DataProcessor
 import joblib
 
-def feature_distribution(X_train, y_train, feature_names):
-    data = pd.concat([pd.DataFrame(X_train, columns=feature_names), y_train], axis=1)
+def feature_distribution(X_train, y_train, feature_names, scaler):
+    X_train_unscaled = pd.DataFrame(scaler.inverse_transform(X_train), columns=feature_names)
+    data = pd.concat([X_train_unscaled, y_train], axis=1)
     data.columns = feature_names + ['diagnosis']
     
     for feature in feature_names:
@@ -22,10 +22,10 @@ def feature_distribution(X_train, y_train, feature_names):
         plt.savefig(f'images/feature_distribution/dist_{feature}.png')
         plt.close()
 
-def correlation_analysis(X_train, feature_names):
-    data = pd.DataFrame(X_train, columns=feature_names)
+def correlation_analysis(X_train, feature_names, scaler):
+    X_train_unscaled = pd.DataFrame(scaler.inverse_transform(X_train), columns=feature_names)
     plt.figure(figsize=(20, 20))
-    sns.heatmap(data.corr(), annot=True, cmap='coolwarm', fmt='.2f', cbar_kws={"shrink": .8})
+    sns.heatmap(X_train_unscaled.corr(), annot=True, cmap='coolwarm', fmt='.2f', cbar_kws={"shrink": .8})
     plt.title("Correlation Heatmap")
     plt.tick_params(axis='both', which='major', labelsize=10, labelbottom = False, bottom=False, top = False, labeltop=True)
     plt.xticks(rotation=90)
@@ -33,12 +33,12 @@ def correlation_analysis(X_train, feature_names):
     plt.savefig('images/interpretation/correlation_heatmap.png')
     plt.close()
 
-def shap_interpretation(model, X_train, X_test, feature_names):
+def shap_interpretation(model, X_train, X_test, feature_names, scaler):
     def predict_fn(X):
         return model.predict_proba(X)[:, 1]
 
-    explainer = shap.Explainer(predict_fn, X_train)
-    shap_values = explainer(X_test)
+    explainer = shap.Explainer(predict_fn, scaler.transform(X_train))
+    shap_values = explainer(scaler.transform(X_test))
 
     plt.figure(figsize=(12, 10))
     shap.plots.beeswarm(shap_values, max_display=len(feature_names), show=False)
@@ -60,14 +60,14 @@ def shap_interpretation(model, X_train, X_test, feature_names):
     plt.savefig('images/interpretation/shap_bar.png')
     plt.close()
 
-def lime_interpretation(model, X_train, feature_names, class_names):
-    explainer = lime_tabular.LimeTabularExplainer(X_train, feature_names=feature_names, class_names=class_names, discretize_continuous=True)
-    exp = explainer.explain_instance(X_train[0], model.predict_proba, num_features=len(feature_names))
+def lime_interpretation(model, X_train, feature_names, class_names, scaler):
+    explainer = lime_tabular.LimeTabularExplainer(scaler.transform(X_train), feature_names=feature_names, class_names=class_names, discretize_continuous=True)
+    exp = explainer.explain_instance(scaler.transform(X_train)[0], model.predict_proba, num_features=len(feature_names))
     exp.save_to_file('images/interpretation/lime_explanation.html')
 
-def pdp_interpretation(model, X_train, feature_names):
+def pdp_interpretation(model, X_train, feature_names, scaler):
     fig, ax = plt.subplots(figsize=(12, 30))
-    PartialDependenceDisplay.from_estimator(model, X_train, features=range(len(feature_names)), feature_names=feature_names, ax=ax)
+    PartialDependenceDisplay.from_estimator(model, scaler.transform(X_train), features=range(len(feature_names)), feature_names=feature_names, ax=ax)
     plt.tight_layout()
     plt.savefig('images/interpretation/pdp_plot.png')
     plt.close()
@@ -83,12 +83,13 @@ if __name__ == '__main__':
     feature_names = pd.read_csv(X_train_path, nrows=0).columns.tolist()
 
     model = joblib.load('src/models/best_model.pkl')
+    scaler = joblib.load('src/models/scaler.pkl')
     X_train, y_train = processor.get_train_data()
     X_test, y_test = processor.get_test_data()
 
-    feature_distribution(X_train, y_train, feature_names)
-    correlation_analysis(X_train, feature_names)
+    feature_distribution(X_train, y_train, feature_names, scaler)
+    correlation_analysis(X_train, feature_names, scaler)
 
-    shap_interpretation(model, X_train, X_test, feature_names)
-    lime_interpretation(model, X_train, feature_names, ['Benign', 'Malignant'])
-    pdp_interpretation(model, X_train, feature_names)
+    shap_interpretation(model, X_train, X_test, feature_names, scaler)
+    lime_interpretation(model, X_train, feature_names, ['Benign', 'Malignant'], scaler)
+    pdp_interpretation(model, X_train, feature_names, scaler)

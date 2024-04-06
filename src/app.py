@@ -4,8 +4,7 @@ import joblib
 from data_preprocessing import DataProcessor
 from PIL import Image
 import shap
-import lime
-from lime.lime_tabular import LimeTabularExplainer
+from lime import lime_tabular
 import matplotlib.pyplot as plt
 
 
@@ -15,28 +14,50 @@ def load_data(data_path):
     processor.preprocess_data()
     data = processor.data
     feature_names = processor.get_feature_names()
-    return data, feature_names, processor.scaler
+    scaler = joblib.load('src/models/scaler.pkl')
+    return data, feature_names, scaler
 
 def load_model(model_path):
     model = joblib.load(model_path)
     return model
 
-def predict(model, input_data):
-    prediction = model.predict(input_data)
+def predict(model, input_data, scaler):
+    input_data_scaled = scaler.transform(input_data)
+    prediction = model.predict(input_data_scaled)
     return prediction
 
-def explain_prediction(model, input_data, scaled_input_data, feature_names):
-    # SHAP explanation
-    explainer = shap.Explainer(model.predict, scaled_input_data)
-    shap_values = explainer.shap_values(scaled_input_data)
-    shap_explanation = shap.Explanation(shap_values, data=scaled_input_data, feature_names=feature_names)
+def shap_interpretation(model, X_train, X_test, feature_names, scaler):
+    def predict_fn(X):
+        return model.predict_proba(X)[:, 1]
 
-    # LIME explanation
-    explainer = LimeTabularExplainer(scaled_input_data, feature_names=feature_names, class_names=['Benign', 'Malignant'], discretize_continuous=True)
-    exp = explainer.explain_instance(scaled_input_data[0], model.predict_proba, num_features=len(feature_names))
-    lime_explanation = exp.as_list()
+    explainer = shap.Explainer(predict_fn, scaler.transform(X_train))
+    shap_values = explainer(scaler.transform(X_test))
 
-    return shap_explanation, lime_explanation
+    plt.figure(figsize=(12, 10))
+    shap.plots.beeswarm(shap_values, max_display=len(feature_names), show=False)
+    plt.title("SHAP Beeswarm Plot")
+    plt.xlabel("SHAP Value")
+    plt.ylabel("Feature")
+    plt.yticks(range(len(feature_names)), feature_names)
+    plt.tight_layout()
+    plt.savefig('images/interpretation/shap_beeswarm.png')
+    plt.close()
+
+    plt.figure(figsize=(12, 10))
+    shap.plots.bar(shap_values, max_display=len(feature_names), show=False)
+    plt.title("SHAP Bar Plot")
+    plt.xlabel("Mean Absolute SHAP Value")
+    plt.ylabel("Feature")
+    plt.yticks(range(len(feature_names)), feature_names)
+    plt.tight_layout()
+    plt.savefig('images/interpretation/shap_bar.png')
+    plt.close()
+
+def lime_interpretation(model, X_train, feature_names, class_names, scaler):
+    explainer = lime_tabular.LimeTabularExplainer(scaler.transform(X_train), feature_names=feature_names, class_names=class_names, discretize_continuous=True)
+    exp = explainer.explain_instance(scaler.transform(X_train)[0], model.predict_proba, num_features=len(feature_names))
+    exp.save_to_file('images/interpretation/lime_prediction_explanation.html')
+
 
 def main():
     st.set_page_config(page_title="Breast Cancer Prediction", page_icon=":female-doctor:")
@@ -101,36 +122,31 @@ def main():
                 with col2:
                     form_data[feature] = st.number_input(feature, value=predefined_data[feature], format="%.5f")
 
-        # Prediction section
-        if st.button("Predict"):
-            input_data = pd.DataFrame([form_data])
-            scaled_input_data = scaler.transform(input_data)
-            prediction = predict(model, scaled_input_data)
-            if prediction[0] == 1:
-                st.error("The prediction is Malignant (M)")
-            else:
-                st.success("The prediction is Benign (B)")
+    # Prediction section
+    if st.button("Predict"):
+        input_data = pd.DataFrame([form_data])
+        prediction = predict(model, input_data, scaler)
+        if prediction[0] == 1:
+            st.error("The prediction is Malignant (M)")
+        else:
+            st.success("The prediction is Benign (B)")
 
-            # Explanation section
-            st.subheader("Prediction Explanation")
-            shap_explanation, lime_explanation = explain_prediction(model, input_data, scaled_input_data, feature_names)
+        # Explanation section
+        st.subheader("Prediction Explanation")
+        st.write("The following features have the most impact on the model's prediction:")
+        shap.initjs()
+        shap_interpretation(model, data.drop('diagnosis', axis=1), input_data, feature_names, scaler)
+        lime_interpretation(model, data.drop('diagnosis', axis=1), feature_names, ['Benign', 'Malignant'], scaler)
+        st.write("SHAP Values:")
+        st.image('images/interpretation/shap_beeswarm.png', use_column_width=True)
+        st.write("LIME Explanation:")
+        st.write("The LIME explanation is saved as an HTML file. Click the link below to view the explanation.")
+        # Display LIME explanation in streamlit
+        with open('images/interpretation/lime_prediction_explanation.html', 'r', encoding='utf-8') as file:
+            explanation = file.read()
+            st.components.v1.html(explanation, height=2000)
 
-            # SHAP explanation
-            st.write("SHAP Explanation:")
-            fig, ax = plt.subplots(figsize=(10, len(feature_names) * 0.4))
-            shap.plots.bar(shap_explanation, show=False, ax=ax)
-            ax.set_title("Feature Importance")
-            ax.set_xlabel("SHAP Value")
-            ax.set_ylabel("Feature")
-            st.pyplot(fig)
-            st.write("The SHAP values indicate the contribution of each feature to the model's prediction. Positive values push the prediction towards the positive class (Malignant), while negative values push towards the negative class (Benign).")
 
-            # LIME explanation
-            st.write("LIME Explanation:")
-            lime_exp_df = pd.DataFrame(lime_explanation, columns=['Feature', 'Importance'])
-            st.dataframe(lime_exp_df)
-            st.write("The LIME explanation shows the contribution of each feature to the model's prediction for the specific instance. Positive values indicate features that push the prediction towards the positive class (Malignant), while negative values push towards the negative class (Benign).")
-    
     elif selected_page == "Interpretation of model":
         st.title("Model Interpretation")
 

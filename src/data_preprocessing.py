@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
 class DataProcessor:
@@ -14,7 +13,6 @@ class DataProcessor:
         self.X_test = None
         self.y_train = None
         self.y_test = None
-        self.scaler = StandardScaler()
 
     def _print(self, msg):
         if self.verbose:
@@ -30,7 +28,7 @@ class DataProcessor:
             raise
 
     def preprocess_data(self):
-        """Preprocess the loaded data, including scaling."""
+        """Preprocess the loaded data."""
         if self.data is None:
             raise ValueError("Data is not loaded. Call load_data() first.")
 
@@ -39,17 +37,16 @@ class DataProcessor:
 
         self.X = self.data.drop('diagnosis', axis=1)
         self.y = self.data['diagnosis']
-        self.X_scaled = self.scaler.fit_transform(self.X)
 
         self._print("Data preprocessing completed.")
 
     def split_data(self, test_size=0.2, random_state=42):
         """Split the data into training and testing sets."""
-        if self.X_scaled is None or self.y is None:
+        if self.X is None or self.y is None:
             raise ValueError("Data is not preprocessed. Call preprocess_data() first.")
 
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            self.X_scaled, self.y, test_size=test_size, random_state=random_state, stratify=self.y
+            self.X, self.y, test_size=test_size, random_state=random_state, stratify=self.y
         )
 
         self._print(f"Data split completed. Train size: {len(self.X_train)}, Test size: {len(self.X_test)}")
@@ -122,5 +119,3 @@ if __name__ == '__main__':
     y_test_path = 'data/processed/y_test.csv'
     processor.save_data(X_train_path, X_test_path, y_train_path, y_test_path)
     print(f"Feature names: {feature_names}")
-    print(f"X_train shape: {X_train.shape}, y_train shape: {y_train.shape}")
-    print(f"X_test shape: {X_test.shape}, y_test shape: {y_test.shape}")
