@@ -1,49 +1,94 @@
-import shap
+import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
-import streamlit as st
+import seaborn as sns
+import shap
+import lime
+from lime import lime_tabular
+from sklearn.inspection import PartialDependenceDisplay
+from data_preprocessing import DataProcessor
+import joblib
 
+def feature_distribution(X_train, y_train, feature_names):
+    data = pd.concat([pd.DataFrame(X_train, columns=feature_names), y_train], axis=1)
+    data.columns = feature_names + ['diagnosis']
+    
+    for feature in feature_names:
+        plt.figure(figsize=(8, 6))
+        sns.histplot(data=data, x=feature, kde=True, hue='diagnosis')
+        plt.title(f"Distribution of {feature}")
+        plt.xlabel(feature)
+        plt.ylabel("Density")
+        plt.legend(title="Diagnosis", labels=["Benign", "Malignant"])
+        plt.savefig(f'images/feature_distribution/dist_{feature}.png')
+        plt.close()
 
-def interpret_prediction_with_shap(model, input_data, data):
-    st.markdown("### SHAP Prediction Interpretation")
+def correlation_analysis(X_train, feature_names):
+    data = pd.DataFrame(X_train, columns=feature_names)
+    plt.figure(figsize=(20, 20))
+    sns.heatmap(data.corr(), annot=True, cmap='coolwarm', fmt='.2f', cbar_kws={"shrink": .8})
+    plt.title("Correlation Heatmap")
+    plt.tick_params(axis='both', which='major', labelsize=10, labelbottom = False, bottom=False, top = False, labeltop=True)
+    plt.xticks(rotation=90)
+    plt.yticks(rotation=0)
+    plt.savefig('images/interpretation/correlation_heatmap.png')
+    plt.close()
 
-    # Calculate SHAP values using the model and the input_data
-    explainer = shap.Explainer(model, data)
-    shap_values = explainer(input_data)
+def shap_interpretation(model, X_train, X_test, feature_names):
+    def predict_fn(X):
+        return model.predict_proba(X)[:, 1]
 
-    # Get the expected value from the explainer, required for the force plot
-    expected_value = explainer.expected_value
+    explainer = shap.Explainer(predict_fn, X_train)
+    shap_values = explainer(X_test)
 
-    # Generate force plot
-    # force plot for a single prediction, thus we use shap_values[0]
-    shap.plots.force(base_value=expected_value, shap_values=shap_values.values[0], feature_names=feature_names)
+    plt.figure(figsize=(12, 10))
+    shap.plots.beeswarm(shap_values, max_display=len(feature_names), show=False)
+    plt.title("SHAP Beeswarm Plot")
+    plt.xlabel("SHAP Value")
+    plt.ylabel("Feature")
+    plt.yticks(range(len(feature_names)), feature_names)
+    plt.tight_layout()
+    plt.savefig('images/interpretation/shap_beeswarm.png')
+    plt.close()
 
-    # If you want to show the plot in the Streamlit app, use shap's matplotlib=True
-    # and Streamlit's st.pyplot() to render the plot.
-    shap.plots.force(base_value=expected_value, shap_values=shap_values.values[0], feature_names=feature_names, matplotlib=True)
-    st.pyplot(bbox_inches='tight')
-    plt.clf()  # Clear the current figure after rendering it in Streamlit
+    plt.figure(figsize=(12, 10))
+    shap.plots.bar(shap_values, max_display=len(feature_names), show=False)
+    plt.title("SHAP Bar Plot")
+    plt.xlabel("Mean Absolute SHAP Value")
+    plt.ylabel("Feature")
+    plt.yticks(range(len(feature_names)), feature_names)
+    plt.tight_layout()
+    plt.savefig('images/interpretation/shap_bar.png')
+    plt.close()
 
+def lime_interpretation(model, X_train, feature_names, class_names):
+    explainer = lime_tabular.LimeTabularExplainer(X_train, feature_names=feature_names, class_names=class_names, discretize_continuous=True)
+    exp = explainer.explain_instance(X_train[0], model.predict_proba, num_features=len(feature_names))
+    exp.save_to_file('images/interpretation/lime_explanation.html')
 
-def interpret_model_coefficients(model, feature_names):
-    """
-    Interprets the coefficients of a logistic regression model.
+def pdp_interpretation(model, X_train, feature_names):
+    fig, ax = plt.subplots(figsize=(12, 30))
+    PartialDependenceDisplay.from_estimator(model, X_train, features=range(len(feature_names)), feature_names=feature_names, ax=ax)
+    plt.tight_layout()
+    plt.savefig('images/interpretation/pdp_plot.png')
+    plt.close()
 
-    Parameters:
-    - model: A trained logistic regression model.
-    - feature_names: A list of feature names.
+if __name__ == '__main__':
+    X_train_path = 'data/processed/X_train.csv'
+    X_test_path = 'data/processed/X_test.csv'
+    y_train_path = 'data/processed/y_train.csv'
+    y_test_path = 'data/processed/y_test.csv'
 
-    Returns:
-    - A Streamlit component that displays the model coefficients in an interpretable manner.
-    """
-    st.markdown("### Model Coefficients Interpretation")
-    st.write("The contribution of each feature to the prediction can be understood by examining the model's coefficients. Positive coefficients increase the log-odds of the prediction being malignant, while negative coefficients decrease it.")
+    processor = DataProcessor()
+    processor.load_preprocessed_data(X_train_path, X_test_path, y_train_path, y_test_path)
+    feature_names = pd.read_csv(X_train_path, nrows=0).columns.tolist()
 
-    coeffs = model.coef_[0]
-    coeff_dict = {feature_names[i]: coeffs[i] for i in range(len(feature_names))}
+    model = joblib.load('src/models/best_model.pkl')
+    X_train, y_train = processor.get_train_data()
+    X_test, y_test = processor.get_test_data()
 
-    # Sort features by the absolute value of their coefficient
-    sorted_features = sorted(coeff_dict.items(), key=lambda kv: np.abs(kv[1]), reverse=True)
+    feature_distribution(X_train, y_train, feature_names)
+    correlation_analysis(X_train, feature_names)
 
-    for feature, coeff in sorted_features:
-        st.text(f"{feature}: {'+' if coeff > 0 else ''}{coeff:.4f}")
+    shap_interpretation(model, X_train, X_test, feature_names)
+    lime_interpretation(model, X_train, feature_names, ['Benign', 'Malignant'])
+    pdp_interpretation(model, X_train, feature_names)

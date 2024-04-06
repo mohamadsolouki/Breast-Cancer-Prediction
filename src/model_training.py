@@ -1,102 +1,99 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc, confusion_matrix
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from sklearn.model_selection import cross_val_score
 import joblib
 from data_preprocessing import DataProcessor
-from tabulate import tabulate
+
+
+def evaluate_model(model, X_test, y_test):
+    y_pred = model.predict(X_test)
+    accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
+    return accuracy, precision, recall, f1, y_pred
+
+def plot_confusion_matrix(y_test, y_pred, model_name):
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(cm, annot=True, fmt="d", cmap='Blues', cbar=False, annot_kws={"size": 16})
+    plt.title(f'Confusion Matrix: {model_name}')
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.savefig(f'images/training/{model_name}_confusion_matrix.png')
+    plt.close()
+
+def plot_roc_curve(y_test, y_pred, model_name):
+    fpr, tpr, _ = roc_curve(y_test, y_pred)
+    roc_auc = auc(fpr, tpr)
+    plt.figure(figsize=(8, 6))
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'AUC = {roc_auc:.2f}')
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title(f'ROC Curve: {model_name}')
+    plt.legend(loc="lower right")
+    plt.savefig(f'images/training/{model_name}_roc_curve.png')
+    plt.close()
 
 def train_and_evaluate_models(X_train, y_train, X_test, y_test):
     models = {
         'Logistic Regression': {
-            'model': LogisticRegression(max_iter=1000),
-            'params': {
-                'C': [0.1, 1, 10],
-                'solver': ['liblinear', 'saga']
-            }
+            'model': LogisticRegression(max_iter=10000),
+            'params': {'C': [0.01, 0.1, 1, 10], 'solver': ['liblinear']}
         },
         'Decision Tree': {
             'model': DecisionTreeClassifier(),
-            'params': {
-                'max_depth': [None, 5, 10],
-                'min_samples_split': [2, 5, 10]
-            }
+            'params': {'max_depth': [5, 10, 20], 'min_samples_leaf': [1, 2, 4]}
         },
         'Random Forest': {
             'model': RandomForestClassifier(),
-            'params': {
-                'n_estimators': [100, 200, 300],
-                'max_depth': [None, 5, 10]
-            }
+            'params': {'n_estimators': [100, 200], 'max_depth': [5, 10, None]}
         },
         'SVM': {
-            'model': SVC(),
-            'params': {
-                'C': [0.1, 1, 10],
-                'kernel': ['linear', 'rbf']
-            }
+            'model': SVC(probability=True),
+            'params': {'C': [0.1, 1, 10], 'kernel': ['rbf'], 'gamma': ['scale', 'auto']}
         }
     }
 
-    best_model = None
-    best_score = 0
-    best_model_name = ''
-
+    best_model, best_score = None, 0
     results = []
 
-    for model_name, model_data in models.items():
-        model = model_data['model']
-        params = model_data['params']
-
-        grid_search = GridSearchCV(estimator=model, param_grid=params, cv=5)
+    for name, data in models.items():
+        print(f"\nTraining {name}...")
+        grid_search = GridSearchCV(data['model'], data['params'], cv=5, scoring='f1')
         grid_search.fit(X_train, y_train)
-        best_model_params = grid_search.best_params_
 
-        model.set_params(**best_model_params)
-        model.fit(X_train, y_train)
+        model = grid_search.best_estimator_
+        accuracy, precision, recall, f1, y_pred = evaluate_model(model, X_test, y_test)
+        plot_confusion_matrix(y_test, y_pred, name)
+        plot_roc_curve(y_test, y_pred, name)
 
-        y_pred = model.predict(X_test)
-        accuracy = accuracy_score(y_test, y_pred)
-        precision = precision_score(y_test, y_pred)
-        recall = recall_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred)
-
-        cv_scores = cross_val_score(model, X_train, y_train, cv=5)
-        cv_mean = cv_scores.mean()
-        cv_std = cv_scores.std()
-
-        if cv_mean > best_score:
-            best_score = cv_mean
-            best_model = model
-            best_model_name = model_name
+        if f1 > best_score:
+            best_model, best_score = model, f1
 
         results.append({
-            'Model': model_name,
-            'Best Parameters': str(best_model_params),
+            'Model': name,
+            'Best Params': grid_search.best_params_,
             'Accuracy': accuracy,
             'Precision': precision,
             'Recall': recall,
-            'F1 Score': f1,
-            'Cross-validation Mean': cv_mean,
-            'Cross-validation Std': cv_std
+            'F1 Score': f1
         })
 
     results_df = pd.DataFrame(results)
-    results_df = results_df[['Model', 'Best Parameters', 'Accuracy', 'Precision', 'Recall', 'F1 Score', 'Cross-validation Mean', 'Cross-validation Std']]
-    results_table = tabulate(results_df, headers='keys', tablefmt='grid', showindex=False)
-
-    print("\nModel Performance Results:")
-    print(results_table)
-
-    print(f"\nBest Model: {best_model_name}")
-    print(f"Best Cross-validation Score: {best_score:.4f}")
-
+    print("\nModel Performance Summary:")
+    print(results_df.to_string(index=False))
+    
     return best_model
-
 
 if __name__ == '__main__':
     data_path = 'data/raw/data.csv'
@@ -107,9 +104,8 @@ if __name__ == '__main__':
 
     X_train, y_train = processor.get_train_data()
     X_test, y_test = processor.get_test_data()
-    feature_names = processor.get_feature_names()
 
     best_model = train_and_evaluate_models(X_train, y_train, X_test, y_test)
 
-    joblib.dump(best_model, 'best_model.pkl')
-    print("\nBest model saved as 'best_model.pkl'")
+    joblib.dump(best_model, 'src/models/best_model.pkl')
+    print(f"\nBest model saved as 'src/models/best_model.pkl'")
