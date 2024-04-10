@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
     best_model, scaler = train_and_evaluate_models(X_train, y_train, X_test, y_test)
 
-    joblib.dump(best_model, 'src/models/best_model.pkl')
-    joblib.dump(scaler, 'src/models/scaler.pkl')
-    print(f"\nBest model saved as 'src/models/best_model.pkl'")
-    print(f"Scaler saved as 'src/models/scaler.pkl'")
+    joblib.dump(best_model, 'models/best_model.pkl')
+    joblib.dump(scaler, 'models/scaler.pkl')
+    print(f"\nBest model saved as 'models/best_model.pkl'")
+    print(f"Scaler saved as 'models/scaler.pkl'")

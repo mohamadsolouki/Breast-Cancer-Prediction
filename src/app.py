@@ -14,7 +14,7 @@ def load_data(data_path):
     processor.preprocess_data()
     data = processor.data
     feature_names = processor.get_feature_names()
-    scaler = joblib.load('src/models/scaler.pkl')
+    scaler = joblib.load('models/scaler.pkl')
     return data, feature_names, scaler
 
 def load_model(model_path):
@@ -70,7 +70,7 @@ def main():
         st.title("Breast Cancer Prediction")
         
         # Load the trained model
-        model = load_model('src/models/best_model.pkl')
+        model = load_model('models/best_model.pkl')
         
         # Load the dataset
         data_path = 'data/raw/data.csv'

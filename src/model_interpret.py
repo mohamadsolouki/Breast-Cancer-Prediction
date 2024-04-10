@@ -25,7 +25,7 @@ def feature_distribution(X_train, y_train, feature_names, scaler):
 def correlation_analysis(X_train, feature_names, scaler):
     X_train_unscaled = pd.DataFrame(scaler.inverse_transform(X_train), columns=feature_names)
     plt.figure(figsize=(20, 20))
-    sns.heatmap(X_train_unscaled.corr(), annot=True, cmap='coolwarm', fmt='.2f', cbar_kws={"shrink": .8})
+    sns.heatmap(X_train_unscaled.corr(), annot=False, cmap='coolwarm', fmt='.2f', cbar_kws={"shrink": .9})
     plt.title("Correlation Heatmap")
     plt.tick_params(axis='both', which='major', labelsize=10, labelbottom = False, bottom=False, top = False, labeltop=True)
     plt.xticks(rotation=90)
@@ -82,8 +82,8 @@ if __name__ == '__main__':
     processor.load_preprocessed_data(X_train_path, X_test_path, y_train_path, y_test_path)
     feature_names = pd.read_csv(X_train_path, nrows=0).columns.tolist()
 
-    model = joblib.load('src/models/best_model.pkl')
-    scaler = joblib.load('src/models/scaler.pkl')
+    model = joblib.load('models/best_model.pkl')
+    scaler = joblib.load('models/scaler.pkl')
     X_train, y_train = processor.get_train_data()
     X_test, y_test = processor.get_test_data()
 
