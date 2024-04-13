@@ -101,7 +101,17 @@ def train_and_evaluate_models(X_train, y_train, X_test, y_test):
     print("\nModel Performance Summary:")
     print(results_df.to_string(index=False))
 
+    # Plot the F1 scores of the models for comparison with showing the score on the bars
+    plt.figure(figsize=(12, 10))
+    sns.barplot(x='Model', y='F1 Score', data=results_df)
+    for i, row in results_df.iterrows():
+        plt.text(i, row['F1 Score'], f"{row['F1 Score']:.2f}", color='black', ha="center")
+    plt.title("Model F1 Scores")
+    plt.savefig('images/training/model_f1_scores.png')
+    plt.close()
+
     return best_model, scaler
+
 
 if __name__ == '__main__':
     data_path = 'data/raw/data.csv'

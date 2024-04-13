@@ -102,6 +102,11 @@ class DataProcessor:
             raise ValueError("Data is not split. Call split_data() first.")
 
         return self.X_test, pd.Series(self.y_test)
+    
+    def feature_names(self, X_train_path):
+        X_train = pd.read_csv(X_train_path)
+        feature_names = X_train.columns.tolist()
+        return feature_names
 
 
 if __name__ == '__main__':

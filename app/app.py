@@ -1,11 +1,16 @@
+import sys
+sys.path.append('../')
+
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
 from data_preprocessing import DataProcessor
 from PIL import Image
-import shap
 from lime import lime_tabular
-import matplotlib.pyplot as plt
+from lime.lime_tabular import LimeTabularExplainer
+import streamlit.components.v1 as components
+
 
 
 def load_data(data_path):
@@ -17,6 +22,13 @@ def load_data(data_path):
     scaler = joblib.load('models/scaler.pkl')
     return data, feature_names, scaler
 
+def load_preprocessed_data(X_train_path, X_test_path, y_train_path, y_test_path):
+    X_train = pd.read_csv(X_train_path)
+    X_test = pd.read_csv(X_test_path)
+    y_train = pd.read_csv(y_train_path)['diagnosis'].values
+    y_test = pd.read_csv(y_test_path)['diagnosis'].values
+    return X_train, X_test, y_train, y_test
+
 def load_model(model_path):
     model = joblib.load(model_path)
     return model
@@ -26,32 +38,6 @@ def predict(model, input_data, scaler):
     prediction = model.predict(input_data_scaled)
     return prediction
 
-def shap_interpretation(model, X_train, X_test, feature_names, scaler):
-    def predict_fn(X):
-        return model.predict_proba(X)[:, 1]
-
-    explainer = shap.Explainer(predict_fn, scaler.transform(X_train))
-    shap_values = explainer(scaler.transform(X_test))
-
-    plt.figure(figsize=(12, 10))
-    shap.plots.beeswarm(shap_values, max_display=len(feature_names), show=False)
-    plt.title("SHAP Beeswarm Plot")
-    plt.xlabel("SHAP Value")
-    plt.ylabel("Feature")
-    plt.yticks(range(len(feature_names)), feature_names)
-    plt.tight_layout()
-    plt.savefig('images/interpretation/shap_beeswarm.png')
-    plt.close()
-
-    plt.figure(figsize=(12, 10))
-    shap.plots.bar(shap_values, max_display=len(feature_names), show=False)
-    plt.title("SHAP Bar Plot")
-    plt.xlabel("Mean Absolute SHAP Value")
-    plt.ylabel("Feature")
-    plt.yticks(range(len(feature_names)), feature_names)
-    plt.tight_layout()
-    plt.savefig('images/interpretation/shap_bar.png')
-    plt.close()
 
 def lime_interpretation(model, X_train, feature_names, class_names, scaler):
     explainer = lime_tabular.LimeTabularExplainer(scaler.transform(X_train), feature_names=feature_names, class_names=class_names, discretize_continuous=True)
@@ -75,6 +61,13 @@ def main():
         # Load the dataset
         data_path = 'data/raw/data.csv'
         data, feature_names, scaler = load_data(data_path)
+
+        # Load preprocessed data
+        X_train_path = 'data/processed/X_train.csv'
+        X_test_path = 'data/processed/X_test.csv'
+        y_train_path = 'data/processed/y_train.csv'
+        y_test_path = 'data/processed/y_test.csv'
+        X_train, X_test, y_train, y_test = load_preprocessed_data(X_train_path, X_test_path, y_train_path, y_test_path)
         
         # Predefined data for a Malignant (M) tumor
         predefined_data = {
@@ -131,24 +124,44 @@ def main():
         else:
             st.success("The prediction is Benign (B)")
 
+        # Prediction probability
+        st.write("Prediction Probability:")
+        prediction_proba = model.predict_proba(scaler.transform(input_data))[0]
+        st.write(f"Benign (B): {prediction_proba[0]:.5f}")
+        st.write(f"Malignant (M): {prediction_proba[1]:.5f}")
+
         # Explanation section
         st.subheader("Prediction Explanation")
-        st.write("The following features have the most impact on the model's prediction:")
-        shap.initjs()
-        shap_interpretation(model, data.drop('diagnosis', axis=1), input_data, feature_names, scaler)
-        lime_interpretation(model, data.drop('diagnosis', axis=1), feature_names, ['Benign', 'Malignant'], scaler)
-        st.write("SHAP Values:")
-        st.image('images/interpretation/shap_beeswarm.png', use_column_width=True)
+        st.write("The LIME explanation provides a local interpretation of the model's prediction for the input data.")
+        st.write("It shows the contribution of each feature to the prediction.")
+        st.write("Lime explanation is a local surrogate model that explains the model's prediction for a single instance.")
+        st.write("The values shown in the LIME explanations are scaled to the original feature values because the model was trained on scaled data for better performance.")
+
+
+        # Create a LimeTabularExplainer
+        explainer = LimeTabularExplainer(scaler.transform(data.drop('diagnosis', axis=1).values), 
+                                        feature_names=feature_names, 
+                                        class_names=['Benign', 'Malignant'], 
+                                        discretize_continuous=True)
+
+        # Explain the model's prediction
+        exp = explainer.explain_instance(scaler.transform(input_data)[0], model.predict_proba, num_features=len(feature_names))
+
+        # Save the explanation as an HTML file
+        exp.save_to_file('images/app/lime_explanation.html')
+
+        # Display the explanation
         st.write("LIME Explanation:")
-        st.write("The LIME explanation is saved as an HTML file. Click the link below to view the explanation.")
-        # Display LIME explanation in streamlit
-        with open('images/interpretation/lime_prediction_explanation.html', 'r', encoding='utf-8') as file:
-            explanation = file.read()
-            st.components.v1.html(explanation, height=2000)
+        components.html(open('images/app/lime_explanation.html', 'r', encoding='utf-8').read(), height=2000)
 
 
     elif selected_page == "Interpretation of model":
         st.title("Model Interpretation")
+
+        # Feature Distribution
+        feature_distribution = Image.open('images/feature_distribution/dist_radius_mean.png')
+        st.image(feature_distribution, caption="Feature Distribution", use_column_width=True)
+        st.write("The Sample Feature Distribution plot shows the distribution of radius_mean feature for both Benign and Malignant tumors.")
 
         # Correlation Heatmap
         correlation_heatmap = Image.open('images/interpretation/correlation_heatmap.png')
