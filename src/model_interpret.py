@@ -37,17 +37,6 @@ def feature_distribution(X_train, y_train, feature_names, scaler):
         plt.savefig(f'images/feature_distribution/dist_{feature}.png')
         plt.close()
 
-# Function to visualize the correlation between features in the training data
-def correlation_analysis(X_train, feature_names, scaler):
-    X_train_unscaled = pd.DataFrame(scaler.inverse_transform(X_train), columns=feature_names)
-    plt.figure(figsize=(20, 20), dpi=800, facecolor='w', edgecolor='k')
-    sns.heatmap(X_train_unscaled.corr(), annot=False, cmap='coolwarm', fmt='.2f', cbar_kws={"shrink": .9})
-    plt.title("Correlation Heatmap")
-    plt.tick_params(axis='both', which='major', labelsize=10, labelbottom = False, bottom=False, top = False)
-    plt.xticks(rotation=90)
-    plt.yticks(rotation=0)
-    plt.savefig('images/interpretation/correlation_heatmap.png')
-    plt.close()
 
 # Function to interpret the model using SHAP values
 def shap_interpretation(model, X_train, X_test, feature_names, scaler):
@@ -86,12 +75,6 @@ def shap_interpretation(model, X_train, X_test, feature_names, scaler):
     plt.close()
 
 
-# Function to interpret the model using LIME
-def lime_interpretation(model, X_train, feature_names, class_names, scaler):
-    explainer = lime_tabular.LimeTabularExplainer(scaler.transform(X_train), feature_names=feature_names, class_names=class_names, discretize_continuous=True)
-    exp = explainer.explain_instance(scaler.transform(X_train)[0], model.predict_proba, num_features=len(feature_names))
-    exp.save_to_file('images/interpretation/lime_explanation.html')
-
 # Function to interpret the model using PDP
 def pdp_interpretation(model, X_train, feature_names, scaler):
     fig, ax = plt.subplots(figsize=(12, 30))
@@ -117,6 +100,8 @@ def feature_importance(model, feature_names):
     plt.barh(range(len(indices)), importances[indices], color='b', align='center')
     plt.yticks(range(len(indices)), [feature_names[i] for i in indices])
     plt.xlabel('Relative Importance')
+    plt.tight_layout()
+    plt.savefig('images/interpretation/feature_importance.png')
     plt.close()
 
 # Main function to interpret the model
@@ -135,9 +120,7 @@ if __name__ == '__main__':
     X_test, y_test = processor.get_test_data()
 
     feature_distribution(X_train, y_train, feature_names, scaler)
-    correlation_analysis(X_train, feature_names, scaler)
     permutation_importance_interpretation(model, X_test, y_test, feature_names, scaler)
     shap_interpretation(model, X_train, X_test, feature_names, scaler)
-    lime_interpretation(model, X_train, feature_names, ['Benign', 'Malignant'], scaler)
     pdp_interpretation(model, X_train, feature_names, scaler)
     feature_importance(model, feature_names)

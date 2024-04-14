@@ -1,14 +1,13 @@
-import sys
-sys.path.append('../')
-
 import streamlit as st
 import pandas as pd
 import joblib
-from data_preprocessing import DataProcessor
 from PIL import Image
 from lime import lime_tabular
 from lime.lime_tabular import LimeTabularExplainer
 import streamlit.components.v1 as components
+import sys
+sys.path.append('../')
+from data_preprocessing import DataProcessor
 
 
 def load_data(data_path):
