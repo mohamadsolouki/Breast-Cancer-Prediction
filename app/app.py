@@ -6,7 +6,7 @@ from lime import lime_tabular
 from lime.lime_tabular import LimeTabularExplainer
 import streamlit.components.v1 as components
 import sys
-sys.path.append('../')
+sys.path.append('src/')
 from data_preprocessing import DataProcessor
 
 
@@ -156,16 +156,19 @@ def main():
         st.title("Model Interpretation")
 
         # Feature Distribution
+        st.subheader("Feature Distribution")
         feature_distribution = Image.open('images/feature_distribution/dist_radius_mean.png')
         st.image(feature_distribution, caption="Feature Distribution", use_column_width=True)
         st.write("The Sample Feature Distribution plot shows the distribution of radius_mean feature for both Benign and Malignant tumors.")
 
         # Correlation Heatmap
-        correlation_heatmap = Image.open('images/interpretation/correlation_heatmap.png')
+        st.subheader("Correlation Heatmap")
+        correlation_heatmap = Image.open('images/EDA/correlation_heatmap.png')
         st.image(correlation_heatmap, caption="Correlation Heatmap", use_column_width=True)
         st.write("The Correlation Heatmap shows the correlation between features in the dataset. Features with high correlation may have redundant information.")
 
         # SHAP Beeswarm Plot
+        st.subheader("SHAP Plots")
         shap_beeswarm = Image.open('images/interpretation/shap_beeswarm.png')
         st.image(shap_beeswarm, caption="SHAP Beeswarm Plot", use_column_width=True)
         st.write("The SHAP Beeswarm plot shows the impact of each feature on the model's prediction. Features with high absolute SHAP values have a significant impact on the prediction.")
@@ -176,6 +179,7 @@ def main():
         st.write("The SHAP Bar plot shows the average absolute SHAP values for each feature, indicating their overall importance in the model.")
 
         # Partial Dependence Plot
+        st.subheader("Partial Dependence Plot")
         pdp_plot = Image.open('images/interpretation/pdp_plot.png')
         st.image(pdp_plot, caption="Partial Dependence Plot", use_column_width=True)
         st.write("The Partial Dependence Plot shows the marginal effect of each feature on the predicted outcome. It helps understand how the model's predictions change as the feature values vary.")
