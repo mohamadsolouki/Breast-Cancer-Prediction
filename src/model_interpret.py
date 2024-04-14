@@ -1,8 +1,5 @@
-import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import shap
-from lime import lime_tabular
 from sklearn.inspection import PartialDependenceDisplay
 from data_preprocessing import DataProcessor
 import joblib
@@ -20,22 +17,6 @@ def permutation_importance_interpretation(model, X_test, y_test, feature_names, 
     plt.tight_layout()
     plt.savefig('images/interpretation/permutation_importance.png')
     plt.close()
-
-# Function to visualize the distribution of features in the training data
-def feature_distribution(X_train, y_train, feature_names, scaler):
-    X_train_unscaled = pd.DataFrame(scaler.inverse_transform(X_train), columns=feature_names)
-    data = pd.concat([X_train_unscaled, y_train], axis=1)
-    data.columns = feature_names + ['diagnosis']
-    
-    for feature in feature_names:
-        plt.figure(figsize=(8, 6))
-        sns.histplot(data=data, x=feature, kde=True, hue='diagnosis')
-        plt.title(f"Distribution of {feature}")
-        plt.xlabel(feature)
-        plt.ylabel("Density")
-        plt.legend(title="Diagnosis", labels=["Benign", "Malignant"])
-        plt.savefig(f'images/feature_distribution/dist_{feature}.png')
-        plt.close()
 
 
 # Function to interpret the model using SHAP values
@@ -119,7 +100,6 @@ if __name__ == '__main__':
     X_train, y_train = processor.get_train_data()
     X_test, y_test = processor.get_test_data()
 
-    feature_distribution(X_train, y_train, feature_names, scaler)
     permutation_importance_interpretation(model, X_test, y_test, feature_names, scaler)
     shap_interpretation(model, X_train, X_test, feature_names, scaler)
     pdp_interpretation(model, X_train, feature_names, scaler)

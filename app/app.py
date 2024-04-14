@@ -129,9 +129,7 @@ def main():
 
         # Explanation section
         st.subheader("Prediction Explanation")
-        st.write("The LIME explanation provides a local interpretation of the model's prediction for the input data.")
-        st.write("It shows the contribution of each feature to the prediction.")
-        st.write("Lime explanation is a local surrogate model that explains the model's prediction for a single instance.")
+        st.write("The LIME explanation provides a local interpretation of the model's prediction for the input data. It shows the contribution of each feature to the prediction.")
         st.write("The values shown in the LIME explanations are scaled to the original feature values because the model was trained on scaled data for better performance.")
 
 
@@ -157,32 +155,32 @@ def main():
 
         # Feature Distribution
         st.subheader("Feature Distribution")
+        st.write("The Sample Feature Distribution plot shows the distribution of radius_mean feature for both Benign and Malignant tumors.")
         feature_distribution = Image.open('images/feature_distribution/dist_radius_mean.png')
         st.image(feature_distribution, caption="Feature Distribution", use_column_width=True)
-        st.write("The Sample Feature Distribution plot shows the distribution of radius_mean feature for both Benign and Malignant tumors.")
 
         # Correlation Heatmap
         st.subheader("Correlation Heatmap")
+        st.write("The Correlation Heatmap shows the correlation between features in the dataset. Features with high correlation may have redundant information.")
         correlation_heatmap = Image.open('images/EDA/correlation_heatmap.png')
         st.image(correlation_heatmap, caption="Correlation Heatmap", use_column_width=True)
-        st.write("The Correlation Heatmap shows the correlation between features in the dataset. Features with high correlation may have redundant information.")
 
         # SHAP Beeswarm Plot
         st.subheader("SHAP Plots")
+        st.write("The SHAP Beeswarm plot shows the impact of each feature on the model's prediction. Features with high absolute SHAP values have a significant impact on the prediction.")
         shap_beeswarm = Image.open('images/interpretation/shap_beeswarm.png')
         st.image(shap_beeswarm, caption="SHAP Beeswarm Plot", use_column_width=True)
-        st.write("The SHAP Beeswarm plot shows the impact of each feature on the model's prediction. Features with high absolute SHAP values have a significant impact on the prediction.")
 
         # SHAP Bar Plot
+        st.write("The SHAP Bar plot shows the average absolute SHAP values for each feature, indicating their overall importance in the model.")
         shap_bar = Image.open('images/interpretation/shap_bar.png')
         st.image(shap_bar, caption="SHAP Bar Plot", use_column_width=True)
-        st.write("The SHAP Bar plot shows the average absolute SHAP values for each feature, indicating their overall importance in the model.")
 
         # Partial Dependence Plot
         st.subheader("Partial Dependence Plot")
+        st.write("The Partial Dependence Plot shows the marginal effect of each feature on the predicted outcome. It helps understand how the model's predictions change as the feature values vary.")
         pdp_plot = Image.open('images/interpretation/pdp_plot.png')
         st.image(pdp_plot, caption="Partial Dependence Plot", use_column_width=True)
-        st.write("The Partial Dependence Plot shows the marginal effect of each feature on the predicted outcome. It helps understand how the model's predictions change as the feature values vary.")
 
 
 if __name__ == '__main__':
