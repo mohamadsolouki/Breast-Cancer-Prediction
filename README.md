@@ -41,7 +41,7 @@ Breast-Cancer-Prediction/
 ## Dataset
 
 The dataset used in this project is the Breast Cancer Wisconsin (Diagnostic) dataset, which contains features computed from digitized images of FNA samples. The dataset includes 569 instances, each with 30 features and a binary target variable indicating the diagnosis (M = malignant, B = benign).
-Wolberg,William, Mangasarian,Olvi, Street,Nick, and Street,W.. (1995). Breast Cancer Wisconsin (Diagnostic). UCI Machine Learning Repository. https://doi.org/10.24432/C5DW2B.
+- Citation: Wolberg,William, Mangasarian,Olvi, Street,Nick, and Street,W.. (1995). Breast Cancer Wisconsin (Diagnostic). UCI Machine Learning Repository. https://doi.org/10.24432/C5DW2B.
 
 ## Features
 
@@ -69,6 +69,11 @@ To set up the project environment:
 
 ## Models and Training
 
+It is better to first run the python scripts in the `src` directory from the root directory of the project. For example, to preprocess the data, run:
+```bash
+python src/data_preprocessing.py
+```
+
 Model training scripts are located in the `src` directory. To train the models and evaluate their performance, run:
 
 ```bash
@@ -79,11 +84,6 @@ This script will output the performance of the models and save the best model to
 
 ## Usage
 
-It is better to first run the python scripts in the `src` directory from the root directory of the project. For example, to preprocess the data, run:
-```bash
-python src/data_preprocessing.py
-```
-
 To run the Streamlit application:
 
 ```bash
@@ -91,7 +91,6 @@ streamlit run app/app.py
 ```
 
 Navigate to `http://localhost:8501` in your web browser to view the application.
-
 
 
 ## License
