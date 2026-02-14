@@ -8,6 +8,9 @@ This module provides comprehensive model training and evaluation including:
 - Comprehensive metrics and visualizations
 """
 
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend to avoid tkinter threading issues
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

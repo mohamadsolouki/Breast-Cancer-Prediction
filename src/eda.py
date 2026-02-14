@@ -8,7 +8,8 @@ This module provides comprehensive EDA functionality including:
 - Statistical summaries
 - Visualization generation
 """
-
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend to avoid tkinter threading issues
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

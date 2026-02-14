@@ -7,7 +7,8 @@ This module provides comprehensive model interpretation including:
 - Partial dependence plots
 - Feature importance visualization
 """
-
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend to avoid tkinter threading issues
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
