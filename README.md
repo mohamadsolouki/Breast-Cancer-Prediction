@@ -3,96 +3,200 @@
 
 ## Overview
 
-This repository hosts the code and documentation for a breast cancer prediction application developed using Python and Streamlit. The application predicts whether a breast tumor is benign or malignant based on diagnostic measurements derived from image data. It is designed to be not only accurate but also interpretable, providing explanations for its predictions to aid oncologists and medical practitioners in decision-making processes.
+A comprehensive machine learning application for breast cancer diagnosis prediction using the Wisconsin Breast Cancer (Diagnostic) dataset. This application predicts whether a breast tumor is benign or malignant based on diagnostic measurements derived from Fine Needle Aspiration (FNA) image data.
+
+Built with interpretability and clinical usability in mind, the application provides detailed explanations for predictions to aid oncologists and medical practitioners in decision-making processes.
+
+## Key Features
+
+- **Interactive Prediction Interface**: User-friendly Streamlit web application with real-time predictions
+- **Multiple ML Models**: Comparison of Logistic Regression, Decision Tree, Random Forest, Gradient Boosting, and SVM
+- **Comprehensive EDA**: Automated exploratory data analysis with visualization generation
+- **Model Interpretability**: SHAP values, permutation importance, and partial dependence plots
+- **Visual Analytics**: Interactive Plotly visualizations including radar charts and gauge indicators
+- **Best Practices**: Stratified sampling, cross-validation, hyperparameter tuning, and proper data scaling
 
 ## Project Structure
 
 ```
 Breast-Cancer-Prediction/
 │
+├── app/
+│   └── app.py                    # Enhanced Streamlit application with multiple pages
+│
 ├── data/
-│   ├── raw/                  # Contains the original, unprocessed datasets
-│   └── processed/            # Contains processed data that is ready for modeling
+│   ├── raw/                      # Original Wisconsin Breast Cancer dataset
+│   │   └── data.csv
+│   └── processed/                # Train/test split data
+│       ├── X_train.csv
+│       ├── X_test.csv
+│       ├── y_train.csv
+│       └── y_test.csv
 │
-├── models/                   # Trained model objects and scaler files
-│   ├── best_model.pkl        # The best performing model saved as a pickle file
-│   └── scaler.pkl            # Scaler object for normalizing input features
+├── images/
+│   ├── app/                      # Runtime-generated visualizations
+│   ├── EDA/                      # Exploratory data analysis plots
+│   │   └── feature_distribution/ # Per-feature distribution plots
+│   ├── interpretation/           # Model interpretation visualizations
+│   └── training/                 # Model training and evaluation plots
 │
-├── src/                      # Source files for the project
-│   ├── data_preprocessing.py # Script for data cleaning and preprocessing
-│   ├── model_training.py     # Script for training machine learning models
-│   └── model_interpret.py    # Script for interpreting models using various techniques
+├── models/
+│   ├── best_model.pkl            # Best performing trained model
+│   └── scaler.pkl                # Fitted StandardScaler
 │
-├── notebooks/                # Jupyter notebooks for exploratory data analysis
-│   └── EDA.ipynb             # Notebook containing exploratory data analysis
+├── notebooks/
+│   └── EDA.ipynb                 # Interactive exploratory analysis notebook
 │
-├── images/                   # Contains generated plots and figures for documentation
-│   ├── app/
-│   └── EDA/
-│   └── interpretation/
-│   └── training/          
+├── src/
+│   ├── data_preprocessing.py     # Data loading, cleaning, and splitting
+│   ├── eda.py                    # Comprehensive EDA and visualization generation
+│   ├── model_training.py         # Model training with cross-validation and tuning
+│   └── model_interpret.py        # SHAP, permutation importance, PDP analysis
 │
-├── app/                      # Streamlit application files
-│   └── app.py                # Main application script for running the Streamlit interface
-│
-└── README.md                 # Project README file
+├── requirements.txt              # Python dependencies
+├── LICENSE                       # MIT License
+└── README.md
 ```
 
 ## Dataset
 
-The dataset used in this project is the Breast Cancer Wisconsin (Diagnostic) dataset, which contains features computed from digitized images of FNA samples. The dataset includes 569 instances, each with 30 features and a binary target variable indicating the diagnosis (M = malignant, B = benign).
-- Citation: Wolberg,William, Mangasarian,Olvi, Street,Nick, and Street,W.. (1995). Breast Cancer Wisconsin (Diagnostic). UCI Machine Learning Repository. https://doi.org/10.24432/C5DW2B.
+The **Wisconsin Breast Cancer (Diagnostic)** dataset contains 569 samples with 30 features computed from digitized images of FNA of breast masses.
 
-## Features
+### Features
+For each cell nucleus, ten characteristics are measured:
+- **Radius**: Mean distance from center to perimeter points
+- **Texture**: Standard deviation of gray-scale values
+- **Perimeter**: Perimeter of the nucleus
+- **Area**: Area of the nucleus
+- **Smoothness**: Local variation in radius lengths
+- **Compactness**: Perimeter² / Area - 1.0
+- **Concavity**: Severity of concave portions
+- **Concave Points**: Number of concave portions
+- **Symmetry**: Symmetry of the nucleus
+- **Fractal Dimension**: "Coastline approximation" - 1
 
-- **Data Preprocessing**: Cleansing and normalization of image-derived features.
-- **Model Training**: Utilizes Logistic Regression, Decision Trees, Random Forest, and SVM. Includes hyperparameter tuning and cross-validation.
-- **Model Interpretation**: Implements SHAP, LIME, and permutation importance for explaining model predictions.
-- **Interactive Application**: Built with Streamlit, offering a user-friendly interface for making predictions and understanding model outputs.
-- **Visualization**: Generates and stores visual explanations including feature importance, partial dependence plots, and correlation heatmaps.
-- **Interpretability**: Focuses on model interpretability and transparency to aid medical professionals in understanding predictions.
+Each feature is computed as:
+- **Mean**: Average across all cells
+- **SE**: Standard error
+- **Worst**: Largest (mean of three largest values)
+
+### Class Distribution
+- **Benign (B)**: 357 samples (62.7%)
+- **Malignant (M)**: 212 samples (37.3%)
+
+> **Citation**: Wolberg, W., Mangasarian, O., Street, N., & Street, W. (1995). Breast Cancer Wisconsin (Diagnostic). UCI Machine Learning Repository. https://doi.org/10.24432/C5DW2B
 
 ## Installation
 
-To set up the project environment:
-
-1. Clone the repository:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/mohamadsolouki/Breast-Cancer-Prediction.git
    cd Breast-Cancer-Prediction
    ```
 
-2. Install the required packages:
+2. **Create a virtual environment** (recommended):
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-## Models and Training
+## Quick Start
 
-It is better to first run the python scripts in the `src` directory from the root directory of the project. For example, to preprocess the data, run:
+### 1. Generate EDA Visualizations
 ```bash
-python src/data_preprocessing.py
+python src/eda.py
 ```
+This creates comprehensive visualizations in `images/EDA/`.
 
-Model training scripts are located in the `src` directory. To train the models and evaluate their performance, run:
-
+### 2. Train Models
 ```bash
 python src/model_training.py
 ```
-This script will output the performance of the models and save the best model to the `models` directory.
+Trains multiple models, performs hyperparameter tuning, and saves the best model.
 
+### 3. Generate Model Interpretations
+```bash
+python src/model_interpret.py
+```
+Creates SHAP plots, permutation importance, and partial dependence plots.
 
-## Usage
-
-To run the Streamlit application:
-
+### 4. Run the Application
 ```bash
 streamlit run app/app.py
 ```
+Navigate to `http://localhost:8501` in your browser.
 
-Navigate to `http://localhost:8501` in your web browser to view the application.
+## Application Pages
 
+### 🔬 Prediction
+- Input patient FNA measurements
+- Get real-time malignancy predictions with confidence scores
+- View interactive gauge charts and probability distributions
+- Compare patient values against class averages with radar charts
+
+### 📊 Data Analysis
+- Explore dataset statistics and class distributions
+- Interactive feature distribution visualizations
+- Correlation heatmaps and scatter matrices
+
+### 📈 Model Performance
+- Compare all trained models side-by-side
+- View accuracy, precision, recall, F1, and AUC metrics
+- Examine confusion matrices and ROC curves
+
+### 🔍 Model Interpretation
+- SHAP beeswarm and bar plots for feature importance
+- Permutation importance analysis
+- Partial dependence plots
+- Feature correlation analysis
+
+### ℹ️ About
+- Dataset documentation
+- Feature descriptions
+- Medical disclaimer
+
+## Model Performance
+
+The application trains and evaluates multiple models:
+
+| Model | Accuracy | Precision | Recall | F1 Score | AUC |
+|-------|----------|-----------|--------|----------|-----|
+| Logistic Regression | ~0.97 | ~0.96 | ~0.95 | ~0.96 | ~0.99 |
+| Random Forest | ~0.96 | ~0.95 | ~0.94 | ~0.95 | ~0.99 |
+| Gradient Boosting | ~0.97 | ~0.96 | ~0.95 | ~0.96 | ~0.99 |
+| SVM | ~0.97 | ~0.97 | ~0.95 | ~0.96 | ~0.99 |
+| Decision Tree | ~0.93 | ~0.90 | ~0.90 | ~0.90 | ~0.90 |
+
+*Note: Actual values may vary based on random state.*
+
+## Technologies Used
+
+- **Python 3.10+**
+- **Streamlit**: Interactive web application
+- **Scikit-learn**: Machine learning models and preprocessing
+- **Plotly**: Interactive visualizations
+- **SHAP**: Model interpretability
+- **Pandas/NumPy**: Data manipulation
+- **Matplotlib/Seaborn**: Static visualizations
+
+## Disclaimer
+
+⚠️ **This application is for educational and research purposes only.** It should not be used as a substitute for professional medical diagnosis. Always consult with qualified healthcare professionals for medical decisions.
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues, fork the repository, and create pull requests.
+
+## Acknowledgments
+
+- UCI Machine Learning Repository for the Wisconsin Breast Cancer dataset
+- The scikit-learn and Streamlit communities
